@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Multi-Agent System — Flow Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --border: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --accent-orange: #f97316;
+            --glow-blue: rgba(59, 130, 246, 0.3);
+            --glow-green: rgba(16, 185, 129, 0.3);
+            --glow-cyan: rgba(6, 182, 212, 0.3);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .header-title .subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .header-status {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--glow-green); }
+        .status-dot.offline { background: var(--accent-red); }
+        .status-dot.pending { background: var(--accent-yellow); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Main layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            grid-template-rows: auto 1fr;
+            gap: 0;
+            height: calc(100vh - 64px);
+        }
+
+        /* Flow visualization */
+        .flow-panel {
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flow-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+        }
+
+        /* Agent nodes */
+        .agent-node {
+            position: absolute;
+            width: 160px;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .agent-node:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+
+        .agent-node.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px var(--glow-cyan), inset 0 0 20px rgba(6, 182, 212, 0.05);
+            animation: nodeActive 1.5s ease-in-out infinite;
+        }
+
+        @keyframes nodeActive {
+            0%, 100% { box-shadow: 0 0 20px var(--glow-cyan); }
+            50% { box-shadow: 0 0 40px var(--glow-cyan), 0 0 60px rgba(6, 182, 212, 0.1); }
+        }
+
+        .agent-node .icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .agent-node .name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .agent-node .port {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .agent-node .status-badge {
+            display: inline-block;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .agent-node .status-badge.processing {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+            border-color: rgba(6, 182, 212, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .agent-node .status-badge.offline {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Position agent nodes */
+        #node-user { left: 50%; top: 20px; transform: translateX(-50%); }
+        #node-customer { left: 50%; top: 130px; transform: translateX(-50%); }
+        #node-law { left: 50%; top: 260px; transform: translateX(-50%); }
+        #node-tax { left: 22%; top: 400px; }
+        #node-compliance { right: 22%; top: 400px; }
+        #node-registry { right: 20px; top: 20px; }
+
+        /* SVG connections */
+        .flow-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .flow-svg line, .flow-svg path {
+            stroke: var(--border);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 6, 4;
+        }
+
+        .flow-svg line.active, .flow-svg path.active {
+            stroke: var(--accent-cyan);
+            stroke-width: 2.5;
+            stroke-dasharray: none;
+            filter: drop-shadow(0 0 4px var(--glow-cyan));
+            animation: flowLine 1s linear infinite;
+        }
+
+        @keyframes flowLine {
+            from { stroke-dashoffset: 0; }
+            to { stroke-dashoffset: -20; }
+        }
+
+        .flow-svg .arrow-marker {
+            fill: var(--accent-cyan);
+        }
+
+        /* Animated particle */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-cyan), 0 0 20px rgba(6, 182, 212, 0.5);
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .particle.visible {
+            opacity: 1;
+        }
+
+        /* Side panel */
+        .side-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            grid-row: 1 / -1;
+        }
+
+        .panel-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-area textarea {
+            width: 100%;
+            min-height: 80px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 12px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-area textarea:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .input-area .btn-send {
+            margin-top: 8px;
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .input-area .btn-send:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .input-area .btn-send:active {
+            transform: translateY(0);
+        }
+
+        .input-area .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Activity log */
+        .activity-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-entry .timestamp {
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-size: 10px;
+        }
+
+        .log-entry .message {
+            color: var(--text-secondary);
+            word-break: break-word;
+        }
+
+        .log-entry .message .highlight {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .log-entry.error .message {
+            color: var(--accent-red);
+        }
+
+        .log-entry.success .message {
+            color: var(--accent-green);
+        }
+
+        /* Metrics bar */
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .metric {
+            text-align: center;
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .metric .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .metric .label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Response panel */
+        .response-panel {
+            padding: 16px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response-panel h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-green);
+            margin-bottom: 8px;
+        }
+
+        .response-content {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        /* Latency display */
+        .latency-display {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            z-index: 5;
+        }
+
+        .latency-display .label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .latency-display .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-yellow);
+            margin-top: 4px;
+        }
+
+        .latency-display .value.fast {
+            color: var(--accent-green);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Agent colors */
+        .agent-customer { --agent-color: var(--accent-blue); }
+        .agent-law { --agent-color: var(--accent-purple); }
+        .agent-tax { --agent-color: var(--accent-orange); }
+        .agent-compliance { --agent-color: var(--accent-green); }
+        .agent-registry { --agent-color: var(--accent-yellow); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>⚖️ Legal Multi-Agent System</h1>
+            <span class="subtitle">A2A Protocol Flow Visualizer</span>
+        </div>
+        <div class="header-status" id="systemStatus">
+            <span><span class="status-dot pending" id="dot-registry"></span>Registry</span>
+            <span><span class="status-dot pending" id="dot-customer"></span>Customer</span>
+            <span><span class="status-dot pending" id="dot-law"></span>Law</span>
+            <span><span class="status-dot pending" id="dot-tax"></span>Tax</span>
+            <span><span class="status-dot pending" id="dot-compliance"></span>Compliance</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Flow Visualization -->
+        <div class="flow-panel">
+            <div class="flow-canvas" id="flowCanvas">
+                <svg class="flow-svg" id="flowSvg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" class="arrow-marker" />
+                        </marker>
+                    </defs>
+                    <!-- Lines drawn by JS -->
+                </svg>
+
+                <!-- Agent Nodes -->
+                <div class="agent-node" id="node-user">
+                    <div class="icon">👤</div>
+                    <div class="name">User</div>
+                    <div class="port">Input</div>
+                </div>
+
+                <div class="agent-node agent-customer" id="node-customer">
+                    <div class="icon">🏢</div>
+                    <div class="name">Customer Agent</div>
+                    <div class="port">:10100</div>
+                    <div class="status-badge" id="badge-customer">idle</div>
+                </div>
+
+                <div class="agent-node agent-law" id="node-law">
+                    <div class="icon">⚖️</div>
+                    <div class="name">Law Agent</div>
+                    <div class="port">:10101</div>
+                    <div class="status-badge" id="badge-law">idle</div>
+                </div>
+
+                <div class="agent-node agent-tax" id="node-tax">
+                    <div class="icon">💰</div>
+                    <div class="name">Tax Agent</div>
+                    <div class="port">:10102</div>
+                    <div class="status-badge" id="badge-tax">idle</div>
+                </div>
+
+                <div class="agent-node agent-compliance" id="node-compliance">
+                    <div class="icon">📋</div>
+                    <div class="name">Compliance Agent</div>
+                    <div class="port">:10103</div>
+                    <div class="status-badge" id="badge-compliance">idle</div>
+                </div>
+
+                <div class="agent-node agent-registry" id="node-registry">
+                    <div class="icon">🗂️</div>
+                    <div class="name">Registry</div>
+                    <div class="port">:10000</div>
+                    <div class="status-badge" id="badge-registry">idle</div>
+                </div>
+
+                <!-- Particles -->
+                <div class="particle" id="particle1"></div>
+                <div class="particle" id="particle2"></div>
+                <div class="particle" id="particle3"></div>
+            </div>
+
+            <!-- Latency -->
+            <div class="latency-display" id="latencyDisplay" style="display:none;">
+                <div class="label">Total Latency</div>
+                <div class="value" id="latencyValue">—</div>
+            </div>
+        </div>
+
+        <!-- Side Panel -->
+        <div class="side-panel">
+            <!-- Metrics -->
+            <div class="metrics-bar">
+                <div class="metric">
+                    <div class="value" id="metricRequests">0</div>
+                    <div class="label">Requests</div>
+                </div>
+                <div class="metric">
+                    <div class="value" id="metricAvgLatency">—</div>
+                    <div class="label">Avg Latency</div>
+                </div>
+                <div class="metric">
+                    <div class="value" id="metricAgents">0/5</div>
+                    <div class="label">Online</div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-area">
+                <h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:8px;">Send Question</h3>
+                <textarea id="questionInput" placeholder="Ask a legal question...&#10;e.g. If a company breaks a contract and avoids taxes, what are the consequences?"></textarea>
+                <button class="btn-send" id="btnSend" onclick="sendQuestion()">
+                    ▶ Send to Multi-Agent System
+                </button>
+            </div>
+
+            <!-- Activity Log -->
+            <div style="padding:12px 16px 4px;border-bottom:none;">
+                <h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;">Activity Log</h3>
+            </div>
+            <div class="activity-log" id="activityLog">
+                <div class="log-entry">
+                    <span class="timestamp">--:--:--</span>
+                    <span class="message">System ready. Checking agent health...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Modal/Panel -->
+    <div class="response-panel" id="responsePanel" style="display:none;">
+        <h3>✅ Response Received</h3>
+        <div class="response-content" id="responseContent"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // Configuration
+        // ============================================================
+        const CONFIG = {
+            registryUrl: 'http://localhost:10000',
+            customerAgentUrl: 'http://localhost:10100',
+            healthCheckInterval: 5000,
+            agents: {
+                registry: { url: 'http://localhost:10000', healthPath: '/health' },
+                customer: { url: 'http://localhost:10100', healthPath: '/.well-known/agent.json' },
+                law: { url: 'http://localhost:10101', healthPath: '/.well-known/agent.json' },
+                tax: { url: 'http://localhost:10102', healthPath: '/.well-known/agent.json' },
+                compliance: { url: 'http://localhost:10103', healthPath: '/.well-known/agent.json' },
+            }
+        };
+
+        // State
+        let state = {
+            requestCount: 0,
+            latencies: [],
+            agentsOnline: 0,
+            isProcessing: false,
+        };
+
+        // ============================================================
+        // Health Checks
+        // ============================================================
+        async function checkHealth() {
+            let online = 0;
+            for (const [name, config] of Object.entries(CONFIG.agents)) {
+                try {
+                    const resp = await fetch(config.url + config.healthPath, { 
+                        signal: AbortSignal.timeout(3000) 
+                    });
+                    if (resp.ok) {
+                        setAgentStatus(name, 'online');
+                        online++;
+                    } else {
+                        setAgentStatus(name, 'offline');
+                    }
+                } catch {
+                    setAgentStatus(name, 'offline');
+                }
+            }
+            state.agentsOnline = online;
+            document.getElementById('metricAgents').textContent = `${online}/5`;
+        }
+
+        function setAgentStatus(name, status) {
+            const dot = document.getElementById(`dot-${name}`);
+            const badge = document.getElementById(`badge-${name}`);
+            if (dot) {
+                dot.className = `status-dot ${status}`;
+            }
+            if (badge) {
+                badge.textContent = status === 'online' ? 'ready' : status;
+                badge.className = `status-badge ${status === 'online' ? '' : 'offline'}`;
+            }
+        }
+
+        function setAgentProcessing(name) {
+            const node = document.getElementById(`node-${name}`);
+            const badge = document.getElementById(`badge-${name}`);
+            if (node) node.classList.add('active');
+            if (badge) {
+                badge.textContent = 'processing';
+                badge.className = 'status-badge processing';
+            }
+        }
+
+        function clearAgentProcessing(name) {
+            const node = document.getElementById(`node-${name}`);
+            const badge = document.getElementById(`badge-${name}`);
+            if (node) node.classList.remove('active');
+            if (badge) {
+                badge.textContent = 'ready';
+                badge.className = 'status-badge';
+            }
+        }
+
+        // ============================================================
+        // Activity Log
+        // ============================================================
+        function addLog(message, type = '') {
+            const log = document.getElementById('activityLog');
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString('en-US', { hour12: false });
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `
+                <span class="timestamp">${timestamp}</span>
+                <span class="message">${message}</span>
+            `;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // ============================================================
+        // Flow Animation
+        // ============================================================
+        function animateFlow(fromNode, toNode, particleId, duration = 800) {
+            return new Promise(resolve => {
+                const from = document.getElementById(fromNode);
+                const to = document.getElementById(toNode);
+                const particle = document.getElementById(particleId);
+                const canvas = document.getElementById('flowCanvas');
+                
+                if (!from || !to || !particle) { resolve(); return; }
+
+                const canvasRect = canvas.getBoundingClientRect();
+                const fromRect = from.getBoundingClientRect();
+                const toRect = to.getBoundingClientRect();
+
+                const startX = fromRect.left + fromRect.width/2 - canvasRect.left;
+                const startY = fromRect.top + fromRect.height - canvasRect.top;
+                const endX = toRect.left + toRect.width/2 - canvasRect.left;
+                const endY = toRect.top - canvasRect.top;
+
+                particle.classList.add('visible');
+                
+                const startTime = performance.now();
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Ease in-out
+                    const eased = progress < 0.5 
+                        ? 2 * progress * progress 
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                    const x = startX + (endX - startX) * eased;
+                    const y = startY + (endY - startY) * eased;
+
+                    particle.style.left = `${x - 4}px`;
+                    particle.style.top = `${y - 4}px`;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        particle.classList.remove('visible');
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(animate);
+            });
+        }
+
+        // ============================================================
+        // Send Question
+        // ============================================================
+        async function sendQuestion() {
+            const input = document.getElementById('questionInput');
+            const btn = document.getElementById('btnSend');
+            const question = input.value.trim();
+
+            if (!question || state.isProcessing) return;
+
+            state.isProcessing = true;
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+            
+            const startTime = performance.now();
+            state.requestCount++;
+            document.getElementById('metricRequests').textContent = state.requestCount;
+            document.getElementById('latencyDisplay').style.display = 'block';
+            document.getElementById('latencyValue').textContent = '...';
+            document.getElementById('responsePanel').style.display = 'none';
+
+            addLog(`<span class="highlight">→ Sending:</span> "${question.substring(0, 60)}..."`, '');
+
+            // Simulate flow animation
+            try {
+                // Step 1: User → Customer Agent
+                addLog('<span class="highlight">[Customer Agent]</span> Receiving question...');
+                setAgentProcessing('customer');
+                await animateFlow('node-user', 'node-customer', 'particle1', 600);
+                
+                // Step 2: Customer → Registry (discover)
+                await sleep(300);
+                addLog('<span class="highlight">[Registry]</span> discover("legal_question") → Law Agent');
+                setAgentProcessing('registry');
+                await sleep(400);
+                clearAgentProcessing('registry');
+
+                // Step 3: Customer → Law Agent
+                addLog('<span class="highlight">[Customer Agent]</span> Delegating to Law Agent...');
+                setAgentProcessing('law');
+                await animateFlow('node-customer', 'node-law', 'particle1', 600);
+                clearAgentProcessing('customer');
+
+                // Step 4: Law Agent analyzes
+                addLog('<span class="highlight">[Law Agent]</span> analyze_law — LLM processing...');
+                await sleep(500);
+                addLog('<span class="highlight">[Law Agent]</span> check_routing — determining specialists...');
+                await sleep(400);
+                addLog('<span class="highlight">[Law Agent]</span> Routing: needs_tax=true, needs_compliance=true');
+
+                // Step 5: Parallel dispatch
+                addLog('<span class="highlight">[Law Agent]</span> Dispatching parallel: Tax + Compliance');
+                setAgentProcessing('tax');
+                setAgentProcessing('compliance');
+                
+                // Parallel animations
+                animateFlow('node-law', 'node-tax', 'particle2', 700);
+                animateFlow('node-law', 'node-compliance', 'particle3', 700);
+                await sleep(700);
+
+                addLog('<span class="highlight">[Tax Agent]</span> Processing tax analysis...');
+                addLog('<span class="highlight">[Compliance Agent]</span> Processing compliance analysis...');
+
+                // Actual API call
+                const response = await sendToCustomerAgent(question);
+                
+                const endTime = performance.now();
+                const latency = ((endTime - startTime) / 1000).toFixed(1);
+                
+                clearAgentProcessing('law');
+                clearAgentProcessing('tax');
+                clearAgentProcessing('compliance');
+
+                // Show results
+                state.latencies.push(parseFloat(latency));
+                const avgLatency = (state.latencies.reduce((a,b) => a+b, 0) / state.latencies.length).toFixed(1);
+                
+                document.getElementById('latencyValue').textContent = `${latency}s`;
+                document.getElementById('latencyValue').className = parseFloat(latency) < 30 ? 'value fast' : 'value';
+                document.getElementById('metricAvgLatency').textContent = `${avgLatency}s`;
+
+                if (response) {
+                    addLog(`<span class="highlight">✅ Response received</span> (${latency}s, ${response.length} chars)`, 'success');
+                    document.getElementById('responsePanel').style.display = 'block';
+                    document.getElementById('responseContent').textContent = response;
+                } else {
+                    addLog('❌ No response received', 'error');
+                }
+
+            } catch (err) {
+                addLog(`❌ Error: ${err.message}`, 'error');
+                clearAgentProcessing('customer');
+                clearAgentProcessing('law');
+                clearAgentProcessing('tax');
+                clearAgentProcessing('compliance');
+            } finally {
+                state.isProcessing = false;
+                btn.disabled = false;
+                btn.textContent = '▶ Send to Multi-Agent System';
+            }
+        }
+
+        async function sendToCustomerAgent(question) {
+            try {
+                // First get agent card
+                const cardResp = await fetch(`${CONFIG.customerAgentUrl}/.well-known/agent.json`);
+                if (!cardResp.ok) throw new Error('Customer Agent unreachable');
+
+                // Send via JSON-RPC (A2A protocol)
+                const requestBody = {
+                    jsonrpc: "2.0",
+                    id: crypto.randomUUID(),
+                    method: "message/send",
+                    params: {
+                        message: {
+                            role: "user",
+                            parts: [{ kind: "text", text: question }],
+                            messageId: crypto.randomUUID()
+                        }
+                    }
+                };
+
+                const resp = await fetch(CONFIG.customerAgentUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                    signal: AbortSignal.timeout(300000) // 5 min timeout
+                });
+
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                
+                const data = await resp.json();
+                
+                // Extract text from response
+                let text = '';
+                const result = data?.result;
+                if (result) {
+                    // Task with artifacts
+                    if (result.artifacts) {
+                        for (const artifact of result.artifacts) {
+                            for (const part of (artifact.parts || [])) {
+                                if (part.text) text += part.text;
+                                else if (part.kind === 'text' && part.text) text += part.text;
+                            }
+                        }
+                    }
+                    // Message with parts
+                    if (!text && result.parts) {
+                        for (const part of result.parts) {
+                            if (part.text) text += part.text;
+                        }
+                    }
+                }
+                
+                return text || JSON.stringify(data, null, 2);
+            } catch (err) {
+                console.error('API Error:', err);
+                throw err;
+            }
+        }
+
+        // ============================================================
+        // Utilities
+        // ============================================================
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ============================================================
+        // Draw SVG connections
+        // ============================================================
+        function drawConnections() {
+            const svg = document.getElementById('flowSvg');
+            const canvas = document.getElementById('flowCanvas');
+            const canvasRect = canvas.getBoundingClientRect();
+
+            function getCenter(id) {
+                const el = document.getElementById(id);
+                if (!el) return { x: 0, y: 0 };
+                const rect = el.getBoundingClientRect();
+                return {
+                    x: rect.left + rect.width/2 - canvasRect.left,
+                    y: rect.top + rect.height/2 - canvasRect.top,
+                    bottom: rect.bottom - canvasRect.top,
+                    top: rect.top - canvasRect.top,
+                };
+            }
+
+            const user = getCenter('node-user');
+            const customer = getCenter('node-customer');
+            const law = getCenter('node-law');
+            const tax = getCenter('node-tax');
+            const compliance = getCenter('node-compliance');
+
+            // Clear existing lines
+            svg.querySelectorAll('line, path').forEach(el => {
+                if (!el.closest('defs')) el.remove();
+            });
+
+            // Draw lines
+            const lines = [
+                { from: { x: user.x, y: document.getElementById('node-user').getBoundingClientRect().bottom - canvasRect.top }, 
+                  to: { x: customer.x, y: customer.top } },
+                { from: { x: customer.x, y: document.getElementById('node-customer').getBoundingClientRect().bottom - canvasRect.top }, 
+                  to: { x: law.x, y: law.top } },
+                { from: { x: law.x, y: document.getElementById('node-law').getBoundingClientRect().bottom - canvasRect.top }, 
+                  to: { x: tax.x, y: tax.top } },
+                { from: { x: law.x, y: document.getElementById('node-law').getBoundingClientRect().bottom - canvasRect.top }, 
+                  to: { x: compliance.x, y: compliance.top } },
+            ];
+
+            lines.forEach(({from, to}) => {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', from.x);
+                line.setAttribute('y1', from.y);
+                line.setAttribute('x2', to.x);
+                line.setAttribute('y2', to.y);
+                line.setAttribute('marker-end', 'url(#arrowhead)');
+                svg.appendChild(line);
+            });
+        }
+
+        // ============================================================
+        // Initialize
+        // ============================================================
+        window.addEventListener('load', () => {
+            setTimeout(drawConnections, 100);
+            checkHealth();
+            setInterval(checkHealth, CONFIG.healthCheckInterval);
+
+            // Handle Enter key
+            document.getElementById('questionInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendQuestion();
+                }
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            setTimeout(drawConnections, 100);
+        });
+
+        // Set default question
+        document.getElementById('questionInput').value = 
+            "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?";
+    </script>
+</body>
+</html>

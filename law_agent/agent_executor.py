@@ -10,7 +10,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
-from law_agent.graph import create_graph
+from law_agent.graph_optimized import create_graph
 
 logger = logging.getLogger(__name__)
 

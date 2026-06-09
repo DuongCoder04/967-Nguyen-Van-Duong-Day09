@@ -87,7 +87,7 @@ def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
             logger.exception("delegate_to_legal_agent failed: %s", exc)
             return f"Could not reach the Law Agent: {exc}"
 
-    llm = get_llm()
+    llm = get_llm(tools=True)
     graph = create_react_agent(
         model=llm,
         tools=[delegate_to_legal_agent],

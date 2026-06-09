@@ -204,7 +204,7 @@ async def main():
     print(f"Question: {QUESTION}")
     print("-" * 70)
 
-    llm = get_llm()
+    llm = get_llm(tools=True)
     graph = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
 
     inputs = {"messages": [{"role": "user", "content": QUESTION}]}

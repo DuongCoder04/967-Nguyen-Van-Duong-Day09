@@ -204,7 +204,7 @@ async def call_tax_specialist(state: LegalState) -> dict:
         "Use the search_tax_law tool to ground your analysis. Keep your response under 200 words."
     )
 
-    llm = get_llm()
+    llm = get_llm(tools=True)
     agent = create_react_agent(model=llm, tools=[search_tax_law], prompt=tax_prompt)
     result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 
@@ -226,7 +226,7 @@ async def call_compliance_specialist(state: LegalState) -> dict:
         "Use the search_compliance_law tool to ground your analysis. Keep your response under 200 words."
     )
 
-    llm = get_llm()
+    llm = get_llm(tools=True)
     agent = create_react_agent(model=llm, tools=[search_compliance_law], prompt=compliance_prompt)
     result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 

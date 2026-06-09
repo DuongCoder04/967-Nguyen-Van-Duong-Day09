@@ -37,7 +37,7 @@ should consult a licensed attorney for specific legal advice.
 
 def create_graph():
     """Return a compiled LangGraph create_react_agent for tax questions."""
-    llm = get_llm()
+    llm = get_llm(tools=True)  # Use OpenRouter for speed
     graph = create_react_agent(
         model=llm,
         tools=[],

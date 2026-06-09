@@ -46,21 +46,19 @@ Tập trung vào: hợp đồng, trách nhiệm dân sự, quyền và nghĩa v�
 
 
 def check_routing(state: State) -> list[Send]:
-    """Quyết định gọi agents nào dựa trên nội dung câu hỏi."""
+    """Routing function: quyết định gọi agents nào dựa trên nội dung câu hỏi."""
     question_lower = state["question"].lower()
     tasks = []
-    
-    # TODO: Thêm logic routing cho privacy_agent
-    # Gợi ý: kiểm tra keywords như "data", "privacy", "gdpr", "dữ liệu"
-    
+
     if any(kw in question_lower for kw in ["tax", "irs", "thuế"]):
         tasks.append(Send("tax_agent", state))
-    
+
     if any(kw in question_lower for kw in ["compliance", "sec", "regulation"]):
         tasks.append(Send("compliance_agent", state))
-    
-    # YOUR CODE HERE: thêm điều kiện cho privacy_agent
-    
+
+    if any(kw in question_lower for kw in ["data", "privacy", "gdpr", "dữ liệu", "rò rỉ", "breach"]):
+        tasks.append(Send("privacy_agent", state))
+
     return tasks if tasks else [Send("aggregate_results", state)]
 
 
@@ -95,10 +93,17 @@ Tập trung: SEC, SOX, FCPA, AML, regulatory violations."""
 # TODO: Implement privacy_agent
 def privacy_agent(state: State) -> dict:
     """Agent chuyên về bảo vệ dữ liệu cá nhân và GDPR."""
-    # YOUR CODE HERE
-    # Gợi ý: tương tự tax_agent và compliance_agent
-    # Tập trung: GDPR, data protection, privacy rights, data breach
-    pass
+    llm = get_llm(tools=True)
+    prompt = f"""Bạn là chuyên gia về GDPR và luật bảo vệ dữ liệu cá nhân.
+
+Câu hỏi gốc: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Hãy phân tích các vấn đề về privacy, GDPR, data breach (nếu có).
+Tập trung: GDPR, CCPA, data protection, quyền của người dùng, nghĩa vụ thông báo vi phạm.
+"""
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"privacy_analysis": response.content}
 
 
 def aggregate_results(state: State) -> dict:
@@ -112,7 +117,8 @@ def aggregate_results(state: State) -> dict:
         sections.append(f"💰 PHÂN TÍCH THUẾ:\n{state['tax_analysis']}")
     if state.get("compliance_analysis"):
         sections.append(f"✅ PHÂN TÍCH TUÂN THỦ:\n{state['compliance_analysis']}")
-    # TODO: Thêm privacy_analysis vào sections
+    if state.get("privacy_analysis"):
+        sections.append(f"🔒 PHÂN TÍCH PRIVACY/GDPR:\n{state['privacy_analysis']}")
     
     combined = "\n\n".join(sections)
     
@@ -132,21 +138,20 @@ def build_graph() -> StateGraph:
     """Xây dựng multi-agent graph."""
     graph = StateGraph(State)
     
-    # Add nodes
+    # Add nodes — note: check_routing is NOT a node, it's a routing function
     graph.add_node("law_agent", law_agent)
-    graph.add_node("check_routing", check_routing)
     graph.add_node("tax_agent", tax_agent)
     graph.add_node("compliance_agent", compliance_agent)
-    # TODO: Thêm privacy_agent node
+    graph.add_node("privacy_agent", privacy_agent)
     graph.add_node("aggregate_results", aggregate_results)
-    
+
     # Define edges
     graph.add_edge(START, "law_agent")
-    graph.add_edge("law_agent", "check_routing")
-    graph.add_conditional_edges("check_routing", lambda x: x)
+    # law_agent → conditional routing using Send API for parallel dispatch
+    graph.add_conditional_edges("law_agent", check_routing, ["tax_agent", "compliance_agent", "privacy_agent", "aggregate_results"])
     graph.add_edge("tax_agent", "aggregate_results")
     graph.add_edge("compliance_agent", "aggregate_results")
-    # TODO: Thêm edge từ privacy_agent đến aggregate_results
+    graph.add_edge("privacy_agent", "aggregate_results")
     graph.add_edge("aggregate_results", END)
     
     return graph.compile()
