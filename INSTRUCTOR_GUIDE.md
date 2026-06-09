@@ -201,7 +201,7 @@ Vẽ trên bảng:
    - Endpoint: `/.well-known/agent.json`
    - Giống như OpenAPI spec cho agents
 
-**Show diagram:** `docs/04_system_architecture.svg`
+**Show diagram:** `docs/slide_bai_giang/04_a2a_system_architecture.svg`
 
 #### Thực Hành (20 phút)
 

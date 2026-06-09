@@ -1,6 +1,6 @@
-"""Bài Tập 4: Thêm Privacy Agent vào Multi-Agent System
+"""Bài giải tham khảo 4: Thêm Privacy Agent vào Multi-Agent System
 
-Hoàn thành các TODO để thêm privacy agent và conditional routing.
+Minh họa cách thêm privacy agent và conditional routing.
 """
 
 import asyncio
@@ -28,7 +28,7 @@ class State(TypedDict):
     law_analysis: Annotated[str, _last_wins]
     tax_analysis: Annotated[str, _last_wins]
     compliance_analysis: Annotated[str, _last_wins]
-    privacy_analysis: Annotated[str, _last_wins]  # TODO: Thêm field mới
+    privacy_analysis: Annotated[str, _last_wins]  # ĐÃ HOÀN THÀNH: field mới
     final_response: str
 
 
@@ -90,7 +90,7 @@ Tập trung: SEC, SOX, FCPA, AML, regulatory violations."""
     return {"compliance_analysis": response.content}
 
 
-# TODO: Implement privacy_agent
+# ĐÃ HOÀN THÀNH: Implement privacy_agent
 def privacy_agent(state: State) -> dict:
     """Agent chuyên về bảo vệ dữ liệu cá nhân và GDPR."""
     llm = get_llm(tools=True)

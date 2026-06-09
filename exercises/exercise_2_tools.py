@@ -1,6 +1,6 @@
-"""Bài Tập 2: Thêm Tools và Knowledge Base
+"""Bài giải tham khảo 2: Thêm Tools và Knowledge Base
 
-Hoàn thành các TODO để thêm tool và knowledge base entry mới.
+Minh họa cách thêm tool và knowledge base entry mới.
 """
 
 import asyncio
@@ -26,7 +26,7 @@ LEGAL_KNOWLEDGE = [
             "(4) cover damages. Statute of limitations is typically 4 years (UCC § 2-725)."
         ),
     },
-    # TODO: Thêm entry về luật lao động Việt Nam
+    # ĐÃ HOÀN THÀNH: Thêm entry về luật lao động Việt Nam
     # Gợi ý: id="labor_law", keywords=["lao động", "sa thải", ...], text="..."
     {
         "id": "labor_law",
@@ -51,7 +51,7 @@ def search_legal_knowledge(query: str) -> str:
     return "Không tìm thấy thông tin liên quan."
 
 
-# TODO: Tạo tool check_statute_of_limitations
+# ĐÃ HOÀN THÀNH: Tạo tool check_statute_of_limitations
 @tool
 def check_statute_of_limitations(case_type: str) -> str:
     """Kiểm tra thời hiệu khởi kiện theo loại vụ án.
@@ -71,7 +71,7 @@ async def main():
     load_dotenv()
     llm = get_llm()
     
-    # TODO: Thêm tool mới vào danh sách
+    # ĐÃ HOÀN THÀNH: Thêm tool mới vào danh sách
     tools = [search_legal_knowledge, check_statute_of_limitations]
     llm_with_tools = llm.bind_tools(tools)
     

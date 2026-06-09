@@ -78,6 +78,7 @@ Codelab hướng dẫn từng bước xây dựng multi-agent system, từ cơ b
 - **[CODELAB.md](CODELAB.md)** - Hướng dẫn chi tiết cho sinh viên
 - **[INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md)** - Hướng dẫn cho giảng viên
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Tài liệu tham khảo nhanh
+- **[PROJECT_PLAN.md](PROJECT_PLAN.md)** - Kế hoạch hoàn thiện và tiêu chí nghiệm thu
 - **[exercises/](exercises/)** - Bài tập thực hành với skeleton code
 - **[exercises/SOLUTIONS.md](exercises/SOLUTIONS.md)** - Đáp án chi tiết
 
@@ -125,7 +126,7 @@ cp .env.example .env
 ### Run the Full System (Stage 5)
 
 ```bash
-# Start all 5 services (registry + 4 agents)
+# Start all services (registry + 4 agents + dashboard)
 ./start_all.sh
 
 # In another terminal, send a test question
@@ -140,12 +141,21 @@ No servers needed — each demo runs as a standalone script:
 uv run python stages/stage_1_direct_llm/main.py
 uv run python stages/stage_2_rag_tools/main.py
 uv run python stages/stage_3_single_agent/main.py
-uv run python stages/stage_4_multi_agent/main.py
+uv run python stages/stage_4_milti_agent/main.py
+```
+
+### Run Offline Smoke Tests
+
+These tests validate registry behavior, routing, graph compilation, and A2A
+response parsing without calling an LLM or external API:
+
+```bash
+uv run python -m unittest discover -s tests -v
 ```
 
 ## LLM Evolution Stages
 
-The `stages/` folder contains progressive demos that build from simple to complex, matching the roadmap in `docs/10_llm_roadmap.svg`:
+The `stages/` folder contains progressive demos that build from simple to complex, matching the roadmap in `docs/slide_bai_giang/10_llm_roadmap.svg`:
 
 | Stage | Name | What It Demonstrates |
 |---|---|---|
@@ -181,9 +191,9 @@ legal_multiagent/
 │   ├── stage_1_direct_llm/
 │   ├── stage_2_rag_tools/
 │   ├── stage_3_single_agent/
-│   └── stage_4_multi_agent/
+│   └── stage_4_milti_agent/
 │
-└── docs/                      # Architecture diagrams (SVG)
+└── docs/slide_bai_giang/      # Lecture slides and architecture diagrams
 ```
 
 Each agent module follows the same structure:
@@ -203,7 +213,7 @@ The model is swappable to any OpenRouter-supported model (e.g., `openai/gpt-4o`,
 
 ## Documentation Diagrams
 
-The `docs/` folder contains SVG architecture diagrams:
+The `docs/slide_bai_giang/` folder contains SVG architecture diagrams:
 
 | Diagram | Topic |
 |---|---|
