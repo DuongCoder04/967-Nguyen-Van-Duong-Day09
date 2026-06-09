@@ -298,6 +298,7 @@ Tax Agent    Compliance Agent
 - **A2A Protocol**: https://github.com/google/A2A
 - **OpenRouter**: https://openrouter.ai/docs
 - **Python Type Hints**: https://docs.python.org/3/library/typing.html
+- **Runtime troubleshooting**: `TROUBLESHOOTING.md`
 
 ---
 

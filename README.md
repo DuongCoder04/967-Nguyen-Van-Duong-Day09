@@ -79,6 +79,7 @@ Codelab hướng dẫn từng bước xây dựng multi-agent system, từ cơ b
 - **[INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md)** - Hướng dẫn cho giảng viên
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Tài liệu tham khảo nhanh
 - **[PROJECT_PLAN.md](PROJECT_PLAN.md)** - Kế hoạch hoàn thiện và tiêu chí nghiệm thu
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Xử lý lỗi runtime thường gặp
 - **[exercises/](exercises/)** - Bài tập thực hành với skeleton code
 - **[exercises/SOLUTIONS.md](exercises/SOLUTIONS.md)** - Đáp án chi tiết
 
@@ -108,7 +109,7 @@ Tổng kết & Q&A (15 phút)
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- An [OpenRouter](https://openrouter.ai) API key
+- An [OpenRouter](https://openrouter.ai) API key, or a local Ollama server
 
 ### Setup
 
@@ -205,11 +206,19 @@ Each agent module follows the same structure:
 
 | Environment Variable | Description | Default |
 |---|---|---|
-| `OPENROUTER_API_KEY` | Your OpenRouter API key | (required) |
-| `OPENROUTER_MODEL` | Model identifier | `anthropic/claude-sonnet-4-5` |
+| `LLM_PROVIDER` | `openrouter` or `ollama` | `openrouter` |
+| `OPENROUTER_API_KEY` | OpenRouter API key | required for OpenRouter |
+| `OPENROUTER_MODEL` | OpenRouter model identifier | `google/gemma-4-31b-it:free` |
+| `OLLAMA_MODEL` | Local Ollama model | `llama3.1:8b` |
+| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
+| `LLM_TEMPERATURE` | Ollama generation temperature | `0.3` |
 | `REGISTRY_URL` | Registry service URL | `http://localhost:10000` |
+| `CUSTOMER_AGENT_URL` | Customer Agent URL used by clients/dashboard | `http://localhost:10100` |
+| `A2A_TIMEOUT_SECONDS` | End-to-end HTTP timeout | `300` |
+| `REGISTRY_TIMEOUT_SECONDS` | Registry request timeout | `10` |
+| `DASHBOARD_PORT` | Dashboard HTTP port | `10420` |
 
-The model is swappable to any OpenRouter-supported model (e.g., `openai/gpt-4o`, `google/gemini-2.0-flash`).
+The model is swappable to any model supported by the selected provider.
 
 ## Documentation Diagrams
 

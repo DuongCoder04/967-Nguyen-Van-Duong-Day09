@@ -35,6 +35,10 @@ cp .env.example .env
 # Sửa file .env, thêm OPENROUTER_API_KEY của bạn
 ```
 
+Bạn cũng có thể dùng Ollama local bằng cách đặt `LLM_PROVIDER=ollama`,
+`OLLAMA_BASE_URL` và `OLLAMA_MODEL`. Xem `TROUBLESHOOTING.md` nếu model không
+kết nối được hoặc request chạy quá lâu.
+
 ---
 
 ## Phần 1: Direct LLM Calling (20 phút)
@@ -59,6 +63,9 @@ LLM (Large Language Model) ở dạng cơ bản nhất là một API nhận inpu
 ```bash
 uv run python stages/stage_1_direct_llm/main.py
 ```
+
+**Kết quả mong đợi:** terminal in câu hỏi, sau đó là một câu trả lời pháp lý
+trực tiếp. Stage này không in tool call hoặc bước agent.
 
 **Bước 2:** Đọc và hiểu code
 
@@ -99,6 +106,9 @@ Thêm parameter `temperature=0.3` vào hàm `get_llm()` trong `common/llm.py` đ
 ```bash
 uv run python stages/stage_2_rag_tools/main.py
 ```
+
+**Kết quả mong đợi:** terminal cho biết tool được chọn, kết quả tra cứu hoặc
+tính toán, rồi câu trả lời cuối cùng được tổng hợp từ tool output.
 
 **Bước 2:** Phân tích code
 
@@ -171,6 +181,9 @@ LangGraph cung cấp `create_react_agent` để tự động hóa pattern này.
 uv run python stages/stage_3_single_agent/main.py
 ```
 
+**Kết quả mong đợi:** agent tự chọn một hoặc nhiều tools và trả lời sau chu
+trình Think → Act → Observe. Tên tool có thể khác nhau tùy câu hỏi/model.
+
 **Bước 2:** Quan sát output
 
 Chú ý cách agent tự động:
@@ -240,6 +253,10 @@ Thêm `verbose=True` vào `create_react_agent()` để xem chi tiết quá trìn
 ```bash
 uv run python stages/stage_4_milti_agent/main.py
 ```
+
+**Kết quả mong đợi:** thấy các node `analyze_law`, `check_routing`, specialist
+agents và `aggregate`. Tax và Compliance có thể chạy song song nên thứ tự log
+giữa hai node không cố định.
 
 **Bước 2:** Phân tích kiến trúc
 
@@ -337,11 +354,19 @@ Customer Agent (10100) → Law Agent (10101)
 
 Chờ ~10 giây để tất cả services khởi động.
 
+**Kết quả mong đợi:** script chỉ in `All services are healthy` sau khi Registry,
+bốn agents và Dashboard đều trả lời health check. Nhấn Ctrl+C sẽ dừng toàn bộ
+process do script khởi động.
+
 **Bước 2:** Test hệ thống
 
 ```bash
 uv run python test_client.py
 ```
+
+Client in `Trace ID`, câu trả lời cuối cùng và thời gian thực thi. Với Ollama
+local, toàn bộ luồng có thể mất vài phút; với model cloud thường nhanh hơn nhưng
+phụ thuộc rate limit.
 
 **Bước 3:** Quan sát logs
 

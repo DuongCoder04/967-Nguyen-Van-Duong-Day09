@@ -1,0 +1,81 @@
+"""Skeleton Exercise 4: add a privacy specialist to a StateGraph."""
+
+import os
+import sys
+from typing import Annotated, TypedDict
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from langgraph.graph import END, START, StateGraph
+from langgraph.types import Send
+
+
+def _last_wins(left: str | None, right: str | None) -> str:
+    return right if right is not None else (left or "")
+
+
+class State(TypedDict):
+    question: str
+    law_analysis: Annotated[str, _last_wins]
+    tax_analysis: Annotated[str, _last_wins]
+    compliance_analysis: Annotated[str, _last_wins]
+    # TODO 1: Add privacy_analysis with the _last_wins reducer.
+    final_response: str
+
+
+def law_agent(state: State) -> dict:
+    return {"law_analysis": f"General legal analysis for: {state['question']}"}
+
+
+def tax_agent(state: State) -> dict:
+    return {"tax_analysis": "Tax analysis"}
+
+
+def compliance_agent(state: State) -> dict:
+    return {"compliance_analysis": "Compliance analysis"}
+
+
+# TODO 2: Implement privacy_agent using get_llm().
+
+
+def check_routing(state: State) -> list[Send]:
+    question = state["question"].lower()
+    tasks = []
+    if any(keyword in question for keyword in ["tax", "irs", "thuế"]):
+        tasks.append(Send("tax_agent", state))
+    if any(keyword in question for keyword in ["compliance", "sec", "regulation"]):
+        tasks.append(Send("compliance_agent", state))
+    # TODO 3: Route privacy/data/GDPR questions to privacy_agent.
+    return tasks if tasks else [Send("aggregate_results", state)]
+
+
+def aggregate_results(state: State) -> dict:
+    sections = [
+        state.get("law_analysis", ""),
+        state.get("tax_analysis", ""),
+        state.get("compliance_analysis", ""),
+        # TODO 4: Include privacy_analysis.
+    ]
+    return {"final_response": "\n\n".join(section for section in sections if section)}
+
+
+def build_graph():
+    graph = StateGraph(State)
+    graph.add_node("law_agent", law_agent)
+    graph.add_node("tax_agent", tax_agent)
+    graph.add_node("compliance_agent", compliance_agent)
+    # TODO 5: Register privacy_agent.
+    graph.add_node("aggregate_results", aggregate_results)
+
+    graph.add_edge(START, "law_agent")
+    graph.add_conditional_edges(
+        "law_agent",
+        check_routing,
+        ["tax_agent", "compliance_agent", "aggregate_results"],
+        # TODO 6: Add privacy_agent to the allowed destinations.
+    )
+    graph.add_edge("tax_agent", "aggregate_results")
+    graph.add_edge("compliance_agent", "aggregate_results")
+    # TODO 7: Connect privacy_agent to aggregate_results.
+    graph.add_edge("aggregate_results", END)
+    return graph.compile()

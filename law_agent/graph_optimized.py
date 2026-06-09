@@ -57,7 +57,7 @@ async def analyze_and_route(state: LawState) -> dict:
         logger.info("Max delegation depth reached (%d); skipping sub-agents", depth)
         return {"law_analysis": "", "needs_tax": False, "needs_compliance": False}
 
-    llm = get_llm(tools=True)  # Use OpenRouter for speed
+    llm = get_llm(tools=True)
     messages = [
         SystemMessage(
             content=(
@@ -158,7 +158,7 @@ async def call_compliance(state: LawState) -> dict:
 
 
 async def aggregate(state: LawState) -> dict:
-    llm = get_llm(tools=True)  # Use OpenRouter for speed
+    llm = get_llm(tools=True)
     sections: list[str] = []
     if state.get("law_analysis"):
         sections.append(f"## Legal Analysis\n{state['law_analysis']}")

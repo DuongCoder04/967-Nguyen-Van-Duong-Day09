@@ -39,7 +39,7 @@ should consult a licensed attorney for specific compliance advice.
 
 def create_graph():
     """Return a compiled LangGraph create_react_agent for compliance questions."""
-    llm = get_llm(tools=True)  # Use OpenRouter for speed
+    llm = get_llm(tools=True)
     graph = create_react_agent(
         model=llm,
         tools=[],

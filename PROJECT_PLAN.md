@@ -17,33 +17,34 @@ Trạng thái: Hoàn thành
 
 ## Phase 2: End-to-End Validation
 
-Trạng thái: Chưa thực hiện
+Trạng thái: Hoàn thành
 
-- Khởi động registry, dashboard và bốn agent.
-- Kiểm tra health endpoint và agent registration.
-- Gửi câu hỏi qua Customer Agent bằng `test_client.py`.
-- Xác minh trace ID đi xuyên suốt Customer, Law, Tax và Compliance Agent.
-- Ghi nhận latency và lỗi theo từng LLM provider.
+- Registry báo healthy và có đủ bốn agent đăng ký.
+- Dashboard trả lời health check.
+- `test_client.py` gửi thành công một request qua Customer Agent.
+- Dashboard lưu trace hoàn chỉnh của Customer, Law, Tax, Compliance và aggregate.
+- Baseline quan sát với `LLM_PROVIDER=ollama`, `llama3.1:8b`: khoảng 230 giây.
+- Phát hiện và sửa lỗi Customer Agent làm mất nội dung specialist khi format lại.
 
 ## Phase 3: Runtime Hardening
 
-Trạng thái: Chưa thực hiện
+Trạng thái: Hoàn thành
 
-- Thêm shutdown cleanup cho `start_all.sh`.
-- Chuẩn hóa timeout, retry và thông báo lỗi giữa các service.
-- Thêm cấu hình URL cho benchmark thay vì hardcode.
-- Bổ sung test cho lỗi registry, agent không khả dụng và response rỗng.
-- Kiểm tra tương thích với phiên bản A2A SDK đang khóa trong `uv.lock`.
+- `start_all.sh` có startup guard, health checks và shutdown cleanup.
+- Agent fail-fast nếu không đăng ký được với Registry.
+- URL và timeout được cấu hình bằng environment variables.
+- Benchmark đóng HTTP client đúng cách và chỉ báo số liệu thực đo.
+- Có test cho registry failure, delegation failure và response rỗng.
+- Legacy `A2AClient` vẫn chạy với SDK hiện tại; cảnh báo migration đã được ghi lại.
 
 ## Phase 4: Codelab Quality
 
-Trạng thái: Chưa thực hiện
+Trạng thái: Hoàn thành
 
-- Tách rõ skeleton bài tập và lời giải tham khảo.
-- Kiểm tra toàn bộ lệnh trong `CODELAB.md`, `INSTRUCTOR_GUIDE.md` và
-  `QUICK_REFERENCE.md`.
-- Thêm expected output cho từng stage.
-- Bổ sung troubleshooting cho OpenRouter, Ollama và port conflict.
+- Skeleton nằm trong `exercises/templates/`; lời giải chạy được nằm ở thư mục cha.
+- Các đường dẫn/lệnh chạy trong tài liệu đã được đồng bộ.
+- `CODELAB.md` có expected output cho từng stage.
+- `TROUBLESHOOTING.md` bao phủ OpenRouter, Ollama, timeout, port và trace.
 
 ## Definition of Done
 
@@ -52,3 +53,14 @@ Trạng thái: Chưa thực hiện
 - Full system khởi động và đăng ký đủ bốn agent.
 - `test_client.py` nhận được câu trả lời A2A hoàn chỉnh.
 - Không còn link nội bộ hoặc lệnh chạy sai trong tài liệu.
+
+## Verification Record
+
+- 15 offline tests: pass.
+- Python compileall: pass.
+- `bash -n start_all.sh`: pass.
+- Startup guard với instance đang chạy: pass.
+- E2E A2A với Ollama: pass, khoảng 230 giây.
+
+Sau khi restart các service, chạy lại `test_client.py` để xác nhận bản sửa
+Customer Agent trả nguyên nội dung specialist qua HTTP.

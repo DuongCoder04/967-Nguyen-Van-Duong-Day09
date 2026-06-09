@@ -1,7 +1,4 @@
-"""Benchmark: Compare latency before and after optimization.
-
-Optimization: merge analyze_law + check_routing into single LLM call.
-Saves 1 sequential LLM call per request.
+"""Measure end-to-end latency for the currently configured runtime.
 
 Usage:
     # Start services first: ./start_all.sh
@@ -9,6 +6,7 @@ Usage:
 """
 
 import asyncio
+import os
 import time
 from uuid import uuid4
 
@@ -17,15 +15,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CUSTOMER_AGENT_URL = "http://localhost:10100"
+CUSTOMER_AGENT_URL = os.getenv("CUSTOMER_AGENT_URL", "http://localhost:10100")
+REGISTRY_URL = os.getenv("REGISTRY_URL", "http://localhost:10000")
+A2A_TIMEOUT_SECONDS = float(os.getenv("A2A_TIMEOUT_SECONDS", "300"))
 QUESTION = "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?"
 
-N_RUNS = 1  # number of runs per variant
+N_RUNS = int(os.getenv("BENCHMARK_RUNS", "1"))
 
 
 async def run_query(label: str) -> float:
     """Send one query to Customer Agent and return elapsed seconds."""
-    async with httpx.AsyncClient(timeout=600.0) as http_client:
+    async with httpx.AsyncClient(timeout=A2A_TIMEOUT_SECONDS) as http_client:
         from a2a.client import A2AClient
         from a2a.types import AgentCard, Message, MessageSendParams, Part, Role, SendMessageRequest, TextPart
 
@@ -62,14 +62,15 @@ async def main():
     # Check services are up
     async with httpx.AsyncClient(timeout=5.0) as client:
         try:
-            r = await client.get("http://localhost:10000/health")
+            r = await client.get(f"{REGISTRY_URL}/health")
             r.raise_for_status()
+            agents_response = await client.get(f"{REGISTRY_URL}/agents")
+            agents_response.raise_for_status()
         except Exception:
             print("ERROR: Services not running. Start with ./start_all.sh")
             return
 
-    agents = await (httpx.AsyncClient()).get("http://localhost:10000/agents")
-    print(f"Registry: {agents.json()['agents'].__len__()} agents registered")
+    print(f"Registry: {len(agents_response.json()['agents'])} agents registered")
     print()
 
     print(f"Running {N_RUNS} query(ies)...")
@@ -87,17 +88,9 @@ async def main():
     print(f"  Times:   {[f'{t:.1f}s' for t in times]}")
     print(f"  Average: {avg:.1f}s")
     print()
-    print("OPTIMIZATIONS APPLIED:")
-    print("  1. analyze_law + check_routing → analyze_and_route (1 fewer LLM call)")
-    print("  2. All agents switched from Ollama local → OpenRouter cloud inference")
-    print("     (RTX 3050 runs claude-opus-4.7:8b at ~45-60s/call; OpenRouter ~5-8s/call)")
-    print()
-    print("Baseline (Ollama, original graph): ~278s")
-    print(f"After optimization (OpenRouter):   ~{avg:.0f}s")
-    if avg < 278:
-        saving = 278 - avg
-        pct = saving / 278 * 100
-        print(f"Improvement:                       -{saving:.0f}s ({pct:.0f}% faster, {278/avg:.1f}x speedup)")
+    print(f"Provider: {os.getenv('LLM_PROVIDER', 'openrouter')}")
+    print(f"Configured end-to-end timeout: {A2A_TIMEOUT_SECONDS:.0f}s")
+    print("Compare runs only when question, provider, model, and hardware are unchanged.")
     print("=" * 60)
 
 

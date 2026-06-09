@@ -1,0 +1,66 @@
+"""Skeleton Exercise 2: add a knowledge entry and a new tool."""
+
+import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.tools import tool
+
+from common.llm import get_llm
+
+
+LEGAL_KNOWLEDGE = [
+    {
+        "id": "ucc_breach",
+        "keywords": ["breach", "contract", "remedies", "damages", "ucc"],
+        "text": "UCC Article 2 commonly uses a four-year limitation period.",
+    },
+    # TODO 1: Add the labor_law entry from CODELAB.md.
+]
+
+
+@tool
+def search_legal_knowledge(query: str) -> str:
+    """Search the local legal knowledge base."""
+    query_lower = query.lower()
+    for entry in LEGAL_KNOWLEDGE:
+        if any(keyword in query_lower for keyword in entry["keywords"]):
+            return f"[{entry['id']}] {entry['text']}"
+    return "Không tìm thấy thông tin liên quan."
+
+
+# TODO 2: Implement @tool check_statute_of_limitations(case_type).
+
+
+async def main() -> None:
+    load_dotenv()
+    llm = get_llm()
+
+    # TODO 3: Add check_statute_of_limitations to this list.
+    tools = [search_legal_knowledge]
+    llm_with_tools = llm.bind_tools(tools)
+    messages = [
+        SystemMessage(content="Bạn là chuyên gia pháp lý. Sử dụng tools để tra cứu."),
+        HumanMessage(content="Thời hiệu khởi kiện vụ vi phạm hợp đồng là bao lâu?"),
+    ]
+
+    response = await llm_with_tools.ainvoke(messages)
+    messages.append(response)
+    for tool_call in response.tool_calls:
+        if tool_call["name"] == "search_legal_knowledge":
+            result = search_legal_knowledge.invoke(tool_call["args"])
+        else:
+            # TODO 4: Invoke the new tool here.
+            result = "Tool chưa được implement"
+        messages.append(ToolMessage(content=result, tool_call_id=tool_call["id"]))
+
+    final_response = await llm_with_tools.ainvoke(messages)
+    print(final_response.content)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

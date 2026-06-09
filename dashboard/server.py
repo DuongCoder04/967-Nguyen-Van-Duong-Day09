@@ -23,6 +23,8 @@ app = FastAPI(title="A2A Dashboard")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 REGISTRY_URL = os.getenv("REGISTRY_URL", "http://localhost:10000")
+CUSTOMER_AGENT_URL = os.getenv("CUSTOMER_AGENT_URL", "http://localhost:10100")
+A2A_TIMEOUT_SECONDS = float(os.getenv("A2A_TIMEOUT_SECONDS", "300"))
 
 HERE = Path(__file__).parent
 HTML = (HERE / "index.html").read_text(encoding="utf-8")
@@ -125,8 +127,8 @@ async def stream_flow(trace_id: str, question: str):
         nonlocal response_text, real_elapsed, cancelled
         ts = time.time()
         try:
-            async with httpx.AsyncClient(timeout=600.0) as http_client:
-                card_url = "http://localhost:10100/.well-known/agent.json"
+            async with httpx.AsyncClient(timeout=A2A_TIMEOUT_SECONDS) as http_client:
+                card_url = f"{CUSTOMER_AGENT_URL}/.well-known/agent.json"
                 card_resp = await http_client.get(card_url)
                 card_resp.raise_for_status()
                 from a2a.types import AgentCard

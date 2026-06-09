@@ -1,7 +1,8 @@
 # Đáp Án Bài Tập
 
-Tài liệu này tóm tắt các thay đổi cần thực hiện. Code hoàn chỉnh nằm ngay trong
-hai file bài tập để có thể chạy và đối chiếu trực tiếp.
+Tài liệu này tóm tắt các thay đổi cần thực hiện. Skeleton nằm trong
+`templates/`; code hoàn chỉnh nằm ngay trong hai file bài tập ở thư mục này để
+có thể chạy và đối chiếu trực tiếp.
 
 ## Exercise 2: Tools và Knowledge Base
 

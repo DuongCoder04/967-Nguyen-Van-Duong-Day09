@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from uuid import uuid4
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
@@ -15,6 +15,21 @@ from a2a.types import Part, TextPart
 from customer_agent.graph import build_graph
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_answer(messages: list) -> str:
+    """Prefer the specialist tool payload over a lossy LLM rewrite."""
+    for msg in reversed(messages):
+        if isinstance(msg, ToolMessage) and msg.name == "delegate_to_legal_agent":
+            if isinstance(msg.content, str) and msg.content.strip():
+                return msg.content
+
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and isinstance(msg.content, str):
+            if msg.content.strip():
+                return msg.content
+
+    return ""
 
 
 class CustomerAgentExecutor(AgentExecutor):
@@ -52,25 +67,7 @@ class CustomerAgentExecutor(AgentExecutor):
                 config={"configurable": {"thread_id": context_id}},
             )
 
-            # Extract the last AI message from the result
-            answer = ""
-            for msg in reversed(result.get("messages", [])):
-                if hasattr(msg, "content") and msg.content:
-                    if not isinstance(msg, HumanMessage):
-                        # Skip ToolMessages, only want final AIMessage
-                        from langchain_core.messages import AIMessage
-                        if isinstance(msg, AIMessage):
-                            answer = msg.content
-                            break
-
-            if not answer:
-                # Fallback: any non-human message content
-                for msg in reversed(result.get("messages", [])):
-                    content = getattr(msg, "content", "")
-                    if content and not isinstance(msg, HumanMessage):
-                        answer = content
-                        break
-
+            answer = _extract_answer(result.get("messages", []))
             if not answer:
                 answer = "I was unable to process your legal question at this time."
 

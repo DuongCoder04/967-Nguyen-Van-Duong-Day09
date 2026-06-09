@@ -51,6 +51,7 @@ async def _register_with_retry(max_attempts: int = 10, delay: float = 2.0) -> No
             )
             await asyncio.sleep(delay)
     logger.error("Failed to register after %d attempts", max_attempts)
+    raise RuntimeError("Law Agent could not register with the registry")
 
 
 async def main() -> None:

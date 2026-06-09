@@ -1,11 +1,16 @@
 # Bài Tập Thực Hành
 
-Thư mục này chứa các bài tập thực hành cho codelab A2A Multi-Agent.
+Thư mục này chứa bài tập và lời giải tham khảo cho codelab A2A Multi-Agent.
+
+- `templates/*.py.template`: skeleton để học viên sao chép và hoàn thành.
+- `exercise_*.py`: lời giải tham khảo có thể chạy trực tiếp.
+- `SOLUTIONS.md`: giải thích các thay đổi chính.
 
 ## Danh Sách Bài Tập
 
 ### Exercise 2: Tools và Knowledge Base
-**File:** `exercise_2_tools.py`  
+**Skeleton:** `templates/exercise_2_tools.py.template`
+**Lời giải:** `exercise_2_tools.py`
 **Thời gian:** 10 phút  
 **Mục tiêu:** Học cách thêm tools và knowledge base vào LLM
 
@@ -22,7 +27,8 @@ uv run python exercises/exercise_2_tools.py
 ---
 
 ### Exercise 4: Multi-Agent với Privacy Agent
-**File:** `exercise_4_multiagent.py`  
+**Skeleton:** `templates/exercise_4_multiagent.py.template`
+**Lời giải:** `exercise_4_multiagent.py`
 **Thời gian:** 15 phút  
 **Mục tiêu:** Mở rộng multi-agent system với agent mới
 
@@ -49,8 +55,9 @@ uv run python exercises/exercise_4_multiagent.py
 
 ## Hướng Dẫn Làm Bài
 
-### 1. Đọc Checkpoint Comments
-Mỗi file có các comment `# ĐÃ HOÀN THÀNH:` đánh dấu phần tương ứng với yêu cầu bài tập.
+### 1. Bắt Đầu Từ Skeleton
+Sao chép file `.py.template` thành file làm bài riêng, sau đó hoàn thành các
+comment `TODO`. Dùng file lời giải ở thư mục cha để đối chiếu sau khi làm xong.
 
 ### 2. Tìm Gợi Ý
 Các comment `# Gợi ý:` cho biết hướng làm.
